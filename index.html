@@ -288,7 +288,7 @@
                 </div>
                 <div class="form-group">
                     <label>API Endpoint</label>
-                    <input type="url" id="api-endpoint" value="https://209.182.233.106:7545/api/admin/whatsapp" placeholder="https://...">
+                    <input type="text" id="api-endpoint" value="http://209.182.233.106:7545/api/admin/whatsapp" placeholder="http://...">
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
                     <label>JWT Token</label>
@@ -440,6 +440,13 @@
             apiEndpoint: document.getElementById('api-endpoint'),
             jwtToken: document.getElementById('jwt-token')
         };
+
+        // --- Environment Awareness ---
+        // On Netlify (HTTPS), we must use the /api proxy to avoid Mixed Content.
+        // On Local (HTTP), we use the absolute URL because no proxy is available.
+        if (window.location.protocol === 'https:' || !['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+            DOM.apiEndpoint.value = '/api/admin/whatsapp';
+        }
 
         let recipients = [];
         let isSending = false;
