@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk WhatsApp Sender - Twinscoder</title>
+    <!-- SheetJS for Excel Support -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #25D366;
+            --primary-dark: #128C7E;
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --text-secondary: #666666;
+            --border: #e1e4e8;
+            --success: #d4edda;
+            --danger: #f8d7da;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #111b21;
+                --card-bg: #202c33;
+                --text: #e9edef;
+                --text-secondary: #8696a0;
+                --border: #3b4a54;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        input[type="text"], 
+        input[type="url"],
+        textarea, 
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            gap: 8px;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: var(--border);
+            color: var(--text);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+        }
+
+        .upload-area i {
+            font-size: 2rem;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+            background: var(--bg);
+            border-radius: 20px;
+            height: 10px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .status-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            background: var(--bg);
+            position: sticky;
+            top: 0;
+            color: var(--text-secondary);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-pending { background: #e2e3e5; color: #383d41; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-error { background: #f8d7da; color: #721c24; }
+        .badge-sending { background: #cce5ff; color: #004085; }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+
+        .stat-item p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .alert-info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Bulk WhatsApp</h1>
+            <p>Send bulk messages with rate limiting (6 msgs/min)</p>
+        </header>
+
+        <div class="card">
+            <div class="section-title">
+                <span>⚙️ Configuration</span>
+            </div>
+            <div class="grid">
+                <div class="form-group">
+                    <label>Instance ID</label>
+                    <input type="text" id="instance-id" value="sending" placeholder="Enter Instance ID">
+                </div>
+                <div class="form-group">
+                    <label>API Endpoint</label>
+                    <input type="url" id="api-endpoint" value="http://209.182.233.106:7545/api/admin/whatsapp" placeholder="http://...">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>JWT Token</label>
+                    <input type="text" id="jwt-token" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5YjE0MDI2MGVkOTljOTg4OTA5MDVlOSIsInJvbGUiOjEsImlhdCI6MTc3MzIyMzk5MiwiZXhwIjoyMDg4NTgzOTkyfQ.gqe6ID1ivjtp5FFKRKaXcq7v1aHhMlD9OmMhBA0RaHA" placeholder="Enter JWT Token">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">
+                <span>📝 Message Content</span>
+            </div>
+            <div class="form-group">
+                <label>Send Type</label>
+                <select id="send-type">
+                    <option value="text">Message Only</option>
+                    <option value="media">Media Only (Image/Video)</option>
+                    <option value="both">Message + Media</option>
+                </select>
+            </div>
+            
+            <div id="text-fields">
+                <div class="form-group">
+                    <label id="message-label">Message Text</label>
+                    <textarea id="message-text" rows="4" placeholder="Type your message here..."></textarea>
+                </div>
+            </div>
+
+            <div id="media-fields" class="hidden">
+                <div class="form-group">
+                    <label>Media Source</label>
+                    <select id="media-source">
+                        <option value="url">Media URL</option>
+                        <option value="file">Upload File</option>
+                    </select>
+                </div>
+                <div id="media-url-container" class="form-group">
+                    <label>Media URL</label>
+                    <input type="url" id="media-url" placeholder="https://...">
+                </div>
+                <div id="media-file-container" class="form-group hidden">
+                    <label>Local Media File</label>
+                    <input type="file" id="media-file" accept="image/*,video/*">
+                </div>
+                <div class="form-group">
+                    <label>Media Type</label>
+                    <select id="media-type">
+                        <option value="image">Image</option>
+                        <option value="video">Video</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">
+                <span>📁 Upload Recipients</span>
+            </div>
+            <div class="alert alert-info">
+                Excel should have at least one column with <b>Phone Numbers</b>. A '91' prefix will be added if missing.
+            </div>
+            <div class="upload-area" id="drop-zone">
+                <i>📁</i>
+                <p id="file-name">Drag & drop Excel file here or click to browse</p>
+                <input type="file" id="file-input" accept=".xlsx, .xls">
+            </div>
+        </div>
+
+        <div id="control-panel" class="card hidden">
+            <div class="section-title">
+                <span>⚡ Sending Status</span>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <h3 id="stat-total">0</h3>
+                    <p>Total</p>
+                </div>
+                <div class="stat-item">
+                    <h3 id="stat-sent" style="color: #28a745;">0</h3>
+                    <p>Sent</p>
+                </div>
+                <div class="stat-item">
+                    <h3 id="stat-failed" style="color: #dc3545;">0</h3>
+                    <p>Failed</p>
+                </div>
+                <div class="stat-item">
+                    <h3 id="stat-remaining">0</h3>
+                    <p>Remaining</p>
+                </div>
+            </div>
+
+            <div class="progress-bar-container" style="background: var(--bg); border-radius: 10px; height: 8px; margin-bottom: 20px;">
+                <div id="progress-bar" style="background: var(--primary); height: 100%; border-radius: 10px; width: 0%; transition: width 0.3s;"></div>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button id="start-btn" class="btn btn-primary">Start Sending</button>
+                <button id="stop-btn" class="btn btn-secondary" disabled>Stop</button>
+                <button id="download-btn" class="btn btn-secondary hidden">Download Result Excel</button>
+            </div>
+
+            <div class="status-table-container">
+                <table id="status-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Phone Number</th>
+                            <th>Status</th>
+                            <th>Time</th>
+                            <th>Response</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Progress rows will appear here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DOM = {
+            fileInput: document.getElementById('file-input'),
+            dropZone: document.getElementById('drop-zone'),
+            fileName: document.getElementById('file-name'),
+            sendType: document.getElementById('send-type'),
+            textFields: document.getElementById('text-fields'),
+            mediaFields: document.getElementById('media-fields'),
+            messageText: document.getElementById('message-text'),
+            messageLabel: document.getElementById('message-label'),
+            mediaSource: document.getElementById('media-source'),
+            mediaUrlContainer: document.getElementById('media-url-container'),
+            mediaFileContainer: document.getElementById('media-file-container'),
+            mediaUrl: document.getElementById('media-url'),
+            mediaFile: document.getElementById('media-file'),
+            mediaType: document.getElementById('media-type'),
+            startBtn: document.getElementById('start-btn'),
+            stopBtn: document.getElementById('stop-btn'),
+            downloadBtn: document.getElementById('download-btn'),
+            controlPanel: document.getElementById('control-panel'),
+            statusTable: document.getElementById('status-table').querySelector('tbody'),
+            progressBar: document.getElementById('progress-bar'),
+            statTotal: document.getElementById('stat-total'),
+            statSent: document.getElementById('stat-sent'),
+            statFailed: document.getElementById('stat-failed'),
+            statRemaining: document.getElementById('stat-remaining'),
+            // Config
+            instanceId: document.getElementById('instance-id'),
+            apiEndpoint: document.getElementById('api-endpoint'),
+            jwtToken: document.getElementById('jwt-token')
+        };
+
+        let recipients = [];
+        let isSending = false;
+        let sentCount = 0;
+        let failedCount = 0;
+        let stopRequested = false;
+
+        // --- UI Logic ---
+
+        DOM.sendType.addEventListener('change', (e) => {
+            const val = e.target.value;
+            if (val === 'text') {
+                DOM.textFields.classList.remove('hidden');
+                DOM.mediaFields.classList.add('hidden');
+                DOM.messageLabel.textContent = "Message Text";
+            } else if (val === 'media') {
+                DOM.textFields.classList.add('hidden');
+                DOM.mediaFields.classList.remove('hidden');
+            } else {
+                DOM.textFields.classList.remove('hidden');
+                DOM.mediaFields.classList.remove('hidden');
+                DOM.messageLabel.textContent = "Caption Text";
+            }
+        });
+
+        DOM.mediaSource.addEventListener('change', (e) => {
+            if (e.target.value === 'url') {
+                DOM.mediaUrlContainer.classList.remove('hidden');
+                DOM.mediaFileContainer.classList.add('hidden');
+            } else {
+                DOM.mediaUrlContainer.classList.add('hidden');
+                DOM.mediaFileContainer.classList.remove('hidden');
+            }
+        });
+
+        DOM.dropZone.addEventListener('click', () => DOM.fileInput.click());
+        DOM.dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            DOM.dropZone.style.borderColor = 'var(--primary)';
+        });
+        DOM.dropZone.addEventListener('dragleave', () => {
+            DOM.dropZone.style.borderColor = 'var(--border)';
+        });
+        DOM.dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            DOM.dropZone.style.borderColor = 'var(--border)';
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        DOM.fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            DOM.fileName.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                
+                // Assume first column is phone numbers
+                recipients = json.slice(1) // skip header
+                    .map(row => row[0])
+                    .filter(cell => cell)
+                    .map(val => {
+                        let phone = String(val).replace(/\D/g, '');
+                        if (phone.length === 10) phone = '91' + phone;
+                        return { phone, status: 'pending', time: '-', response: '-' };
+                    });
+
+                if (recipients.length > 0) {
+                    DOM.controlPanel.classList.remove('hidden');
+                    resetStats();
+                    renderTable();
+                } else {
+                    alert('No valid phone numbers found in the first column.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function resetStats() {
+            sentCount = 0;
+            failedCount = 0;
+            DOM.statTotal.textContent = recipients.length;
+            DOM.statSent.textContent = '0';
+            DOM.statFailed.textContent = '0';
+            DOM.statRemaining.textContent = recipients.length;
+            DOM.progressBar.style.width = '0%';
+            DOM.downloadBtn.classList.add('hidden');
+        }
+
+        function renderTable() {
+            DOM.statusTable.innerHTML = '';
+            recipients.forEach((r, i) => {
+                const tr = document.createElement('tr');
+                tr.id = `row-${i}`;
+                tr.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td>${r.phone}</td>
+                    <td><span class="badge badge-${r.status}">${r.status}</span></td>
+                    <td>${r.time}</td>
+                    <td>${r.response}</td>
+                `;
+                DOM.statusTable.appendChild(tr);
+            });
+        }
+
+        function updateRow(index, data) {
+            const tr = document.getElementById(`row-${index}`);
+            if (!tr) return;
+            recipients[index] = { ...recipients[index], ...data };
+            
+            tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${recipients[index].phone}</td>
+                <td><span class="badge badge-${data.status}">${data.status}</span></td>
+                <td>${data.time || recipients[index].time}</td>
+                <td title="${data.response || recipients[index].response}">${(data.response || recipients[index].response).substring(0, 30)}...</td>
+            `;
+            
+            if (data.status === 'success') {
+                sentCount++;
+                DOM.statSent.textContent = sentCount;
+            } else if (data.status === 'error') {
+                failedCount++;
+                DOM.statFailed.textContent = failedCount;
+            }
+            
+            DOM.statRemaining.textContent = recipients.length - (sentCount + failedCount);
+            DOM.progressBar.style.width = `${((sentCount + failedCount) / recipients.length) * 100}%`;
+            tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // --- Sending Logic ---
+
+        DOM.startBtn.addEventListener('click', async () => {
+            if (recipients.length === 0) return;
+            
+            isSending = true;
+            stopRequested = false;
+            DOM.startBtn.disabled = true;
+            DOM.stopBtn.disabled = false;
+            DOM.downloadBtn.classList.add('hidden');
+
+            const jwt = DOM.jwtToken.value;
+            const instance = DOM.instanceId.value;
+            const baseUrl = DOM.apiEndpoint.value;
+            const type = DOM.sendType.value;
+            
+            // Prepare media if needed
+            let mediaFileBlob = null;
+            if (type !== 'text' && DOM.mediaSource.value === 'file') {
+                mediaFileBlob = DOM.mediaFile.files[0];
+            }
+
+            for (let i = 0; i < recipients.length; i++) {
+                if (stopRequested) break;
+                if (recipients[i].status === 'success') continue;
+
+                updateRow(i, { status: 'sending', time: new Date().toLocaleTimeString() });
+
+                try {
+                    let result;
+                    if (type === 'text') {
+                        result = await sendMessage(baseUrl, instance, jwt, recipients[i].phone, DOM.messageText.value);
+                    } else {
+                        result = await sendMedia(baseUrl, instance, jwt, recipients[i].phone, type, mediaFileBlob);
+                    }
+
+                    if (result.success) {
+                        updateRow(i, { status: 'success', response: 'Ok' });
+                    } else {
+                        updateRow(i, { status: 'error', response: result.error });
+                    }
+                } catch (err) {
+                    updateRow(i, { status: 'error', response: err.message });
+                }
+
+                // Wait 10 seconds for 6 msgs / minute limit
+                if (i < recipients.length - 1 && !stopRequested) {
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+                }
+            }
+
+            isSending = false;
+            DOM.startBtn.disabled = false;
+            DOM.stopBtn.disabled = true;
+            DOM.downloadBtn.classList.remove('hidden');
+            alert('Progress Completed!');
+        });
+
+        DOM.stopBtn.addEventListener('click', () => {
+            stopRequested = true;
+            DOM.stopBtn.disabled = true;
+        });
+
+        async function sendMessage(baseUrl, instance, token, to, message) {
+            const url = `${baseUrl}/send-message?instanceId=${instance}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ to, message })
+            });
+            const data = await response.json();
+            if (response.ok) return { success: true, data };
+            return { success: false, error: JSON.stringify(data) };
+        }
+
+        async function sendMedia(baseUrl, instance, token, to, sendType, fileBlob) {
+            const url = `${baseUrl}/send-media?instanceId=${instance}`;
+            const formData = new FormData();
+            formData.append('to', to);
+            formData.append('mediaType', DOM.mediaType.value);
+            
+            if (sendType === 'both') {
+                formData.append('caption', DOM.messageText.value);
+            }
+
+            if (fileBlob) {
+                formData.append('media', fileBlob);
+            } else {
+                // If using URL, we must first fetch it then append it as a blob
+                // because the API expects a file upload (multipart) based on Python code review
+                const mediaUrl = DOM.mediaUrl.value;
+                const resp = await fetch(mediaUrl);
+                const blob = await resp.blob();
+                const filename = mediaUrl.split('/').pop().split('?')[0] || 'media';
+                formData.append('media', blob, filename);
+            }
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                    // Browser automatically sets multi-part boundary
+                },
+                body: formData
+            });
+            const data = await response.json();
+            if (response.ok) return { success: true, data };
+            return { success: false, error: JSON.stringify(data) };
+        }
+
+        DOM.downloadBtn.addEventListener('click', () => {
+            const ws = XLSX.utils.json_to_sheet(recipients);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Results");
+            XLSX.writeFile(wb, `WhatsApp_Report_${new Date().getTime()}.xlsx`);
+        });
+    </script>
+</body>
+</html>
